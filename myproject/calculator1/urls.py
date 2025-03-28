@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import calculate_sum
+from .views import calculate
 
 urlpatterns = [
-    path("sum/", calculate_sum, name="calculate_sum"),
+    path("calculate/", calculate, name="calculate"),  # Update the path
 ]

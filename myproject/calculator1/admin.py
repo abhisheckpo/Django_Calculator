@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import SumRecord
-
+from .models import CalculationRecord 
 
 # Register your models here.
-admin.site.register(SumRecord)
+admin.site.register(CalculationRecord)
