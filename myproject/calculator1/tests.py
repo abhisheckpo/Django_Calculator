@@ -1,49 +1,93 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from .models import SumRecord
+from calculator1.models import CalculationRecord  
 import json
 
-class SumRecordTestCase(TestCase):
+class CalculationRecordTestCase(TestCase):
     def setUp(self):
-        self.record = SumRecord.objects.create(num1=5, num2=7, sum_result=12)
+        self.record = CalculationRecord.objects.create(num1=5, num2=7, result=12, operation='+')
 
-    def test_sum_record_creation(self):
-        """Test if SumRecord model saves correctly."""
-        record = SumRecord.objects.get(id=self.record.id)
+    def test_calculation_record_creation(self):
+        """Test if CalculationRecord model saves correctly."""
+        record = CalculationRecord.objects.get(id=self.record.id)
         self.assertEqual(record.num1, 5)
         self.assertEqual(record.num2, 7)
-        self.assertEqual(record.sum_result, 12)
+        self.assertEqual(record.result, 12)
+        self.assertEqual(record.operation, '+')
 
-class CalculateSumAPITestCase(TestCase):
+class CalculatorAPITestCase(TestCase):
     def setUp(self):
         self.client = Client()
-        self.url = reverse("calculate_sum")  # Gets the URL for `/api/sum/`
+        self.url = reverse("calculate")
 
-    def test_valid_sum_post_request(self):
-        """Test API response with valid numbers."""
+    def test_addition(self):
+        """Test addition operation."""
         response = self.client.post(
-            self.url, 
-            data=json.dumps({"num1": 10, "num2": 15}), 
+            self.url,
+            data=json.dumps({"num1": 10, "num2": 15, "operation": "+"}),
             content_type="application/json"
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"sum": 25})
+        self.assertEqual(response.json(), {"result": 25.0})
+        self.assertTrue(CalculationRecord.objects.filter(num1=10, num2=15, result=25.0, operation='+').exists())
 
-        # Check if the sum is stored in the database
-        self.assertTrue(SumRecord.objects.filter(num1=10, num2=15, sum_result=25).exists())
-
-    def test_missing_fields(self):
-        """Test API response with missing fields."""
-        response = self.client.post(self.url, data=json.dumps({}), content_type="application/json")
+    def test_subtraction(self):
+        """Test subtraction operation."""
+        response = self.client.post(
+            self.url,
+            data=json.dumps({"num1": 20, "num2": 5, "operation": "-"}),
+            content_type="application/json"
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"sum": 0})  # Since defaults are 0
+        self.assertEqual(response.json(), {"result": 15.0})
+
+    def test_multiplication(self):
+        """Test multiplication operation."""
+        response = self.client.post(
+            self.url,
+            data=json.dumps({"num1": 6, "num2": 4, "operation": "*"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"result": 24.0})
+
+    def test_division(self):
+        """Test division operation."""
+        response = self.client.post(
+            self.url,
+            data=json.dumps({"num1": 30, "num2": 5, "operation": "/"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"result": 6.0})
+
+    def test_zero_division_error(self):
+        """Test division by zero error."""
+        response = self.client.post(
+            self.url,
+            data=json.dumps({"num1": 10, "num2": 0, "operation": "/"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"error": "Division by zero is not allowed"})
+
+    def test_invalid_operation(self):
+        """Test API response with an invalid operation."""
+        response = self.client.post(
+            self.url,
+            data=json.dumps({"num1": 10, "num2": 5, "operation": "%"}),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"error": "Invalid operation"})
 
     def test_invalid_data(self):
         """Test API response with invalid data (string input)."""
         response = self.client.post(
             self.url, 
-            data=json.dumps({"num1": "abc", "num2": 10}), 
+            data=json.dumps({"num1": "abc", "num2": 10, "operation": "+"}), 
             content_type="application/json"
         )
-        self.assertEqual(response.status_code, 400)  # Should return error
-        self.assertIn("error", response.json())  # Error message should be in response
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json())
+
