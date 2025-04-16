@@ -1,7 +1,12 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .models import CalculationRecord  # Updated model name to be more general
+from .models import CalculationRecord  
+from .serializers import CalculationRecordSerializer  
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
 
 @csrf_exempt
 def calculate(request):
@@ -11,7 +16,7 @@ def calculate(request):
             num1 = float(data.get("num1", 0))
             num2 = float(data.get("num2", 0))
             operation = data.get("operation", "+")
-            
+
             # Perform calculation
             if operation == "+":
                 result = num1 + num2
@@ -25,13 +30,23 @@ def calculate(request):
                 result = num1 / num2
             else:
                 return JsonResponse({"error": "Invalid operation"}, status=400)
-            
+
             # Save to MySQL database
             CalculationRecord.objects.create(num1=num1, num2=num2, operation=operation, result=result)
-            
+
             return JsonResponse({"result": result})
-        
+
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+@api_view(['GET'])
+def latest_record(request):
+    try:
+        latest = CalculationRecord.objects.latest('created_at')
+        serializer = CalculationRecordSerializer(latest)
+        return Response(serializer.data)
+    except CalculationRecord.DoesNotExist:
+        return Response({"error": "No records found"}, status=404)
