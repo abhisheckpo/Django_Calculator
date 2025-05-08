@@ -6,24 +6,49 @@ const Calculator = () => {
   const [operation, setOperation] = useState("+");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [latestRecord, setLatestRecord] = useState(null);
 
   const calculate = async () => {
-    setError(""); 
+    setError("");
+    setLatestRecord(null); // Clear previous latest record
 
-    const response = await fetch("http://localhost:8000/api/calculate/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ num1, num2, operation }),
-    });
+    try {
+      const response = await fetch("http://localhost:8000/api/calculate/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ num1, num2, operation }),
+      });
 
-    const data = await response.json();
-    if (data.error) {
-      setError(data.error);
-      setResult(null);
-    } else {
-      setResult(data.result);
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+        setResult(null);
+      } else {
+        setResult(data.result);
+      }
+    } catch (err) {
+      setError("Server error");
+    }
+  };
+
+  const fetchLatestRecord = async () => {
+    setError("");
+    setResult(null); // Clear current result
+
+    try {
+      const response = await fetch("http://localhost:8000/api/latest/");
+      const data = await response.json();
+
+      if (data.error) {
+        setLatestRecord(null);
+        setError(data.error);
+      } else {
+        setLatestRecord(data);
+      }
+    } catch (err) {
+      setError("Error fetching latest record");
     }
   };
 
@@ -48,9 +73,22 @@ const Calculator = () => {
         placeholder="Enter second number"
       />
       <button onClick={calculate}>Calculate</button>
+      <button onClick={fetchLatestRecord} style={{ marginLeft: "10px" }}>
+        Fetch Latest Calculation
+      </button>
 
       {error && <h3 style={{ color: "red" }}>{error}</h3>}
       {result !== null && !error && <h3>Result: {result}</h3>}
+
+      {latestRecord && (
+        <div style={{ marginTop: "20px" }}>
+          <h3>Latest Record:</h3>
+          <p>
+            {latestRecord.num1} {latestRecord.operation} {latestRecord.num2} ={" "}
+            {latestRecord.result}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
