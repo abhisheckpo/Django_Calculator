@@ -9,3 +9,29 @@ class CalculationRecord(models.Model):
 
     def __str__(self):
         return f"{self.num1} {self.operation} {self.num2} = {self.result}"
+
+    def perform_addition(self):
+        return self.num1 + self.num2
+
+    def perform_subtraction(self):
+        return self.num1 - self.num2
+
+    def perform_multiplication(self):
+        return self.num1 * self.num2
+
+    def perform_division(self):
+        if self.num2 == 0:
+            raise ZeroDivisionError("Division by zero is not allowed")
+        return self.num1 / self.num2
+
+    def calculate_result(self):
+        if self.operation == '+':
+            return self.perform_addition()
+        elif self.operation == '-':
+            return self.perform_subtraction()
+        elif self.operation == '*':
+            return self.perform_multiplication()
+        elif self.operation == '/':
+            return self.perform_division()
+        else:
+            raise ValueError("Invalid operation")
